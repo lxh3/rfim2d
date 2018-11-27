@@ -32,7 +32,7 @@ def load_svA():
         data - [r, s, A, As]
             r - list of value of r simulated
             s - list of avalanche sizes obtained for each value of r simulated 
-                (e.g. s[0] contains a list of the sizes obtained with disorder=r[0])
+                (e.g. s[0] contains the sizes obtained with disorder=r[0])
             A - list of areas weighted size distribution function values associated with the
                 corresponding value of s
             As - A*s provided for convenience
@@ -48,7 +48,7 @@ def load_hvdMdh():
         data - [r, h, dMdh]
             r - list of value of r simulated
             h - list of field values obtained for each value of r simulated 
-                (e.g. h[0] contains a list of the sizes obtained with disorder=r[0])
+                (e.g. h[0] contains the sizes obtained with disorder=r[0])
             dMdh - list of derivatives of the megnetization with respect to the field associated with the
                    corresponding value of h
     """

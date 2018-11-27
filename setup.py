@@ -36,4 +36,10 @@ setup(name = NAME,
       tests_require=['nose'],
       include_package_data=True,
       package_data = {'' : ['*.pkl.gz']},
-      zip_safe=False)
+      zip_safe=False,
+      classifiers=[
+          "Programming Language :: Python :: 3",
+          "License :: OSI Approved :: MIT License",
+          "Operating System :: OS Independent",
+          ]
+     )

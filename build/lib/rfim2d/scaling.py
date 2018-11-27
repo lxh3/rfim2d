@@ -24,29 +24,15 @@ def As_Collapse(s, As, constant_with_r, constant):
     yscaled_from_function = As_Scaling(s, constant_with_r, constant)
     return xscaled, yscaled, yscaled_from_function
 
-def Sigma_func(r_list, constant, simple=False, scaled=False):
+def Sigma_func(r_list, constant):
     """
     Nonlinear scaling variable function determined from 
     the flow equations of the disorder, w, and avalanche size, s
-    Input:
-        r_list - list of r values
-        constant - constants on which Sigma(r) is dependent
-        simple - flag for whether to use the Sigma derived from the simplest dw/dl
-        scaled - flag for whether to use the Sigma derived from the simplest dw/dl
-                 scaled for comparison with complicated form at small r
-    Output:
-        Sigma(r) values for the given inputs
     """
-    rScale, sScale, sigmaNu, B, F = constant
+    rScale, sScale, signu, B, F = constant
     r = np.array(r_list)
     w = r/rScale
-    if simple:
-        Sigma = abs(sScale)*np.exp(1/(w*sigmaNu))*(-B+(1/w))**(F+(B/sigmaNu))
-        if scaled:
-            Sigma = np.exp(B/sigmaNu)*Sigma
-        return Sigma 
-    else:
-        return abs(sScale)*np.exp(B*F*w + 1/(w*sigmaNu))*w**((B/sigmaNu)-F)
+    return abs(sScale)*np.exp(-B*F*w + 1/(w*signu))*w**(-(B/signu)-F)
 
 def dMdh_Scaling(h, constant_with_r, constant):
     """
@@ -73,7 +59,7 @@ def dMdh_Collapse(h, dMdh, constant_with_r, constant):
     return xscaled, yscaled, yscaled_from_function
 
 
-def eta_func(r_list, constant, **kwargs):
+def eta_func(r_list, constant):
     """
     Nonlinear scaling variable function determined from
     the flow equations for the disorder, w, and the field, h

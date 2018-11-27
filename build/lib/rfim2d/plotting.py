@@ -2,7 +2,8 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 
-from . import general_use, scaling
+from . import general_use
+
 
 replace_dict = {"$" : "", "/" : "", "(" : "", ")" : "", "\\" : "", " " : "", "," : ""}
 
@@ -17,16 +18,6 @@ def multiple_replace(adict, text):
     # For each match, look up the corresponding value in the dictionary
     return regex.sub(lambda match: adict[match.group(0)], text)
 
-def parse_kwargs(kwargs):
-    """
-    extract values from kwargs or set default
-    """
-    logscale = kwargs.get('logscale',[False,False])
-    Range = kwargs.get('Range', [[],[]])
-    colors = kwargs.get('colors', None)
-    figure_name = kwargs.get('figure_name',None)
-    values = [logscale, Range, colors, figure_name]
-    return values
 
 def define_colors(r_list):
     """
@@ -88,13 +79,11 @@ def finish_plot(ax, figure_name, loc='upper left'):
 
 
 
-def plot_xy(data, labels, **kwargs):
+def plot_xy(data, labels, logscale=[False,False], Range=[[],[]], colors=None, figure_name=None):
     """
     Plot x vs y for each value of r
     """
     r_list, x_list, y_list = data
-
-    logscale, Range, colors, figure_name = parse_kwargs(kwargs)
 
     if colors == None:
         colors = define_colors(r_list)
@@ -112,26 +101,13 @@ def plot_xy(data, labels, **kwargs):
 
     return
 
-def generate_points(x_list, function, constant, simple, scaled):
-    """
-    generate (r,Sigma(r)) points to plot function behavior at 
-    points intermediate to those simulated
-    """
-    minimum_r = np.min(x_list)
-    maximum_r = np.max(x_list)
-    step_size = (maximum_r-minimum_r)/100.
-    r_vals = np.arange(minimum_r, maximum_r, step_size)
-    funcr_vals = function(r_vals, constant, simple=simple, scaled=scaled)
-    return r_vals, funcr_vals
 
-def plot_xy_and_xfofx(data, function, labels, constant, constant_given_r=None, **kwargs):
+def plot_xy_and_xfofx(data, function, labels, constant, constant_given_r=None, logscale=[False,False], Range=[[],[]], colors=None, figure_name=None):
     """
     Plot x vs y and x vs function(x) for each value of r
     """
     r_list, x_list, y_list = data
     
-    logscale, Range, colors, figure_name = parse_kwargs(kwargs)
-
     if colors == None and r_list != None:
         colors = define_colors(r_list)
 
@@ -142,10 +118,14 @@ def plot_xy_and_xfofx(data, function, labels, constant, constant_given_r=None, *
 
     if r_list == None:
         ax.scatter(x_list, y_list, color='r', label=labels[1], lw=2)
-        simple = kwargs.get('simple',False)
-        scaled = kwargs.get('scaled',False)
-        r_vals, funcr_vals = generate_points(x_list, function, constant, simple, scaled)
-        ax.plot(r_vals, funcr_vals, color='k', label=labels[1]+r'$_{scaling}$', lw=1)
+
+        minimum_r = np.min(x_list)
+        maximum_r = np.max(x_list)
+        step_size = (maximum_r-minimum_r)/100.
+        r_vals = np.arange(minimum_r, maximum_r, step_size)
+        Sigma_vals = function(r_vals, constant)
+
+        ax.plot(r_vals, Sigma_vals, color='k', label=labels[1]+r'$_{scaling}$', lw=1)
         loc='upper right'
     else:
         for r, x, y, cgr, color in zip(r_list, x_list, y_list, constant_given_r, colors):
@@ -158,13 +138,11 @@ def plot_xy_and_xfofx(data, function, labels, constant, constant_given_r=None, *
     return
 
 
-def plot_collapse(data, function, labels, constant, constant_given_r, **kwargs):
+def plot_collapse(data, function, labels, constant, constant_given_r, logscale=[False,False], Range=[[],[]], colors=None, figure_name=None):
     """
     Plot the scaling collapse of the data (x,y) and fitting function output (x,function(y))  
     """
     r_list, x_list, y_list = data
-
-    logscale, Range, colors, figure_name = parse_kwargs(kwargs)
 
     if colors == None:
         colors = define_colors(r_list)
@@ -181,15 +159,5 @@ def plot_collapse(data, function, labels, constant, constant_given_r, **kwargs):
 
     finish_plot(ax, figure_name)
 
-    return
-
-def plot_Sigma(r, Sigma, params, labels=[r'$r$',r'$\Sigma(r)$'], logscale=[False,True], simple=False, scaled=False):
-    data = [None, r, Sigma]
-    plot_xy_and_xfofx(data, scaling.Sigma_func, labels, params, logscale=logscale, simple=simple, scaled=scaled)
-    return
-
-def plot_eta(r, eta,  params, labels=[r'$r$',r'$\eta(r)$'], logscale=[False,False]):
-    data = [None, r, eta]
-    plot_xy_and_xfofx(data, scaling.eta_func, labels, params, logscale=logscale)
     return
 

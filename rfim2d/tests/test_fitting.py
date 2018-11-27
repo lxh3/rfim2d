@@ -23,3 +23,12 @@ def test_joint_fit():
     params, err = fitting.joint_fit(args)
     return
 
+def test_joint_fit_simple():
+    priorWeight = 0.1
+    r, params = test_fit_As()
+    Sigma = params[:len(r)]
+    r, params = test_fit_dMdh()
+    eta = params[len(r):2*len(r)]
+    args = [r, Sigma, eta, priorWeight]
+    params, err = fitting.joint_fit(args, simple=True)
+    return

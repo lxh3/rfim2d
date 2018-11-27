@@ -10,5 +10,6 @@
 
 # Internal use items
 TODO
+*.ipynb
 *.png
 .ipynb_checkpoints/
