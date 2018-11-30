@@ -14,3 +14,4 @@ build/
 *.ipynb
 *.png
 .ipynb_checkpoints/
+.pytest_cache/
