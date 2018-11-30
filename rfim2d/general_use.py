@@ -69,3 +69,28 @@ def generate_colors(num_colors):
     color_list = c.T
     return color_list
 
+def add_sigmaNu(params):
+    """
+    Add sigmaNu to list of parameters obtained with
+    a fit where sigmaNu is fixed to 0.5 (sigmaNu_fixed=True)
+    Input:
+        params - params from fit with fixed sigmaNu
+    Output:
+        params_Sigma - full list of params with sigmaNu included
+    """
+    if len(params)==4:
+        rScale, sScale, B, F = params
+        sigmaNu = 0.5
+        params = rScale, sScale, sigmaNu, B, F
+    elif len(params) ==5:
+        print('sigmaNu already added, passing...')
+    elif len(params) == 7:
+        rScale, sScale, etaScale, betaDeltaOverNu, B, C, F = params
+        sigmaNu = 0.5
+        params = rScale, sScale, etaScale, sigmaNu, betaDeltaOverNu, B, C, F
+    elif len(params) == 8:
+        print('sigmaNu already added, passing...')
+    else:
+        print('wrong number of parameters supplied')
+    return params
+

@@ -183,13 +183,3 @@ def plot_collapse(data, function, labels, constant, constant_given_r, **kwargs):
 
     return
 
-def plot_Sigma(r, Sigma, params, labels=[r'$r$',r'$\Sigma(r)$'], logscale=[False,True], simple=False, scaled=False):
-    data = [None, r, Sigma]
-    plot_xy_and_xfofx(data, scaling.Sigma_func, labels, params, logscale=logscale, simple=simple, scaled=scaled)
-    return
-
-def plot_eta(r, eta,  params, labels=[r'$r$',r'$\eta(r)$'], logscale=[False,False]):
-    data = [None, r, eta]
-    plot_xy_and_xfofx(data, scaling.eta_func, labels, params, logscale=logscale)
-    return
-

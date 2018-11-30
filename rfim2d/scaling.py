@@ -31,7 +31,8 @@ def Sigma_func(r_list, constant, simple=False, scaled=False):
     Input:
         r_list - list of r values
         constant - constants on which Sigma(r) is dependent
-        simple - flag for whether to use the Sigma derived from the simplest dw/dl
+        simple - flag for whether to use the Sigma derived from dw/dl = w^2+B w^3
+        powerlaw - flag for whether to use the 
         scaled - flag for whether to use the Sigma derived from the simplest dw/dl
                  scaled for comparison with complicated form at small r
     Output:
@@ -41,7 +42,7 @@ def Sigma_func(r_list, constant, simple=False, scaled=False):
     r = np.array(r_list)
     w = r/rScale
     if simple:
-        Sigma = abs(sScale)*np.exp(1/(w*sigmaNu))*(-B+(1/w))**(F+(B/sigmaNu))
+        Sigma = abs(sScale)*np.exp(1/(w*sigmaNu))*(B+(1/w))**(F-(B/sigmaNu))
         if scaled:
             Sigma = np.exp(B/sigmaNu)*Sigma
         return Sigma 
@@ -73,7 +74,7 @@ def dMdh_Collapse(h, dMdh, constant_with_r, constant):
     return xscaled, yscaled, yscaled_from_function
 
 
-def eta_func(r_list, constant, **kwargs):
+def eta_func(r_list, constant, simple=False, **kwargs):
     """
     Nonlinear scaling variable function determined from
     the flow equations for the disorder, w, and the field, h
@@ -81,5 +82,7 @@ def eta_func(r_list, constant, **kwargs):
     rScale,etaScale,betaDeltaOverNu,B,C = constant
     r = np.array(r_list)
     w = np.array(r)/rScale
-    return etaScale*np.exp(-betaDeltaOverNu/w+B*C*w)*w**(C+B*betaDeltaOverNu)
-
+    if simple:
+        return etaScale*np.exp(-betaDeltaOverNu/w)*(B+(1/w))**(-C+B*betaDeltaOverNu)
+    else:
+        return etaScale*np.exp(-B*C*w-betaDeltaOverNu/w)*w**(-B*betaDeltaOverNu+C)

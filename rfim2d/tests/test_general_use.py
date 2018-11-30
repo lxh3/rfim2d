@@ -11,4 +11,3 @@ def test_generate_colors():
     num = 3
     colors = general_use.generate_colors(num)
     assert colors.shape==(num,3)
-
