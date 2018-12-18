@@ -63,7 +63,6 @@ def get_keys(fit_type, func_type='wellbehaved'):
         print('Error: Fit type not recognized. Unable to obtain keys for parameters')
         return -1
 
-
 def ensure_dict(params, key_dict, sigmaNu_fixed):
     """ 
     Convert params to dictionary format for easier access if necessary
@@ -75,7 +74,6 @@ def ensure_dict(params, key_dict, sigmaNu_fixed):
         keys = key_dict['joint']
         params = join_dict(keys,params)
     return params
-
 
 def separate_params(params, key_dict):
     """

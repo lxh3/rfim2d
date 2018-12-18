@@ -136,6 +136,9 @@ def scatter_vs_function(data, function, labels, constant, constant_given_r, **kw
     """
     r_list, x_list, y_list = data
    
+    if isinstance(constant, dict):
+        keys, constant = split_dict(constant)
+
     logscale, Range, colors, figure_name, show = parse_kwargs(kwargs, r_list)
 
     ax = setup_plot(labels, logscale, Range)
@@ -158,6 +161,9 @@ def collapse(data, function, labels, constant, constant_given_r, **kwargs):
     (Used to plot the scaling collapse of A and dM/dh)
     """
     r_list, x_list, y_list = data
+
+    if isinstance(constant, dict):
+        keys, constant = split_dict(constant)
 
     logscale, Range, colors, figure_name, show = parse_kwargs(kwargs, r_list)
 
@@ -182,8 +188,18 @@ def compare(data, function, labels, constant, **kwargs):
     """
     x_list, y_list = data
 
+    if isinstance(constant, dict):
+        keys, constant = split_dict(constant)
+
     if not isinstance(constant[0],list):
-        constant = [constant]
+        if isinstance(constant[0],dict):
+            constant_list = []
+            for c in constant:
+                key, params = split_dict(c)
+                constant_list.append(params)
+            constant = constant_list
+        else:
+            constant = [constant]
 
     types = kwargs.get('types', ['powerlaw', 'simple', 'wellbehaved', 'pitchfork'])
     if isinstance(types, str):

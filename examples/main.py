@@ -89,8 +89,6 @@ r,eta = fitting.get_eta()
 args = [r, Sigma, r, eta]
 params, err = fitting.joint_fit(args)
 params_Sigma, params_eta, prior = fitting.divvy_params(params, True, 'wellbehaved')
-params_Sigma = list(params_Sigma.values())
-params_eta = list(params_eta.values())
 
 # plot fits
 labels = [r'$r$',r'$\Sigma(r)$']
@@ -99,7 +97,7 @@ figure_name = 'saves/Sigma_fit.png'
 loc = 'upper right'
 plotting.compare([r,Sigma], scaling.Sigma_func, labels, params_Sigma, logscale=logscale, loc=loc, figure_name=figure_name, types='wellbehaved')
 labels = [r'$r$',r'$\eta(r)$']
-logscale = [False,False]
+logscale = [False,True]
 figure_name = 'saves/eta_fit.png'
 loc = 'lower right'
 plotting.compare([r,eta], scaling.eta_func, labels, params_eta, logscale=logscale, loc=loc, figure_name=figure_name, types='wellbehaved')
@@ -122,8 +120,8 @@ params_eta = []
 for t in types:
     params, err = fitting.joint_fit(args, func_type=t)
     pS, pe, prior = fitting.divvy_params(params, True, func_type=t)
-    params_Sigma.append(list(pS.values()))
-    params_eta.append(list(pe.values()))
+    params_Sigma.append(pS)
+    params_eta.append(pe)
 
 # plot and save a figure comparing the various forms
 data = [r,Sigma]
