@@ -11,6 +11,7 @@
 # Internal use items
 TODO
 build/
+python_notebooks/
 *.ipynb
 *.png
 .ipynb_checkpoints/
