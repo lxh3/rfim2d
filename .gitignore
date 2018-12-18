@@ -12,6 +12,7 @@
 TODO
 build/
 python_notebooks/
+saves/
 *.ipynb
 *.png
 .ipynb_checkpoints/
