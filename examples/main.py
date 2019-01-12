@@ -4,6 +4,9 @@ import numpy as np
 import rfim2d
 from rfim2d import save_and_load, fitting, plotting, scaling, errors
 
+import matplotlib.style as style
+style.use('seaborn-paper')
+
 #### CREATE SAVES FOLDER ####
 
 directory = 'saves/'
@@ -14,8 +17,12 @@ if not os.path.exists(directory):
 
 # load data
 r,s,A,sA = save_and_load.load_svA()
-num_colors = len(r)
-colors = plotting.generate_colors(num_colors)
+try:
+    colors = save_and_load.load_func('colors_r.pkl.gz')
+    print('Loading saved color choices')
+except FileNotFoundError:
+    num_colors = len(r)
+    colors = plotting.generate_colors(num_colors)
 
 # plot s vs sA
 data = [r, s, sA]
@@ -113,8 +120,12 @@ save_and_load.save_func('saves/Sigma_and_eta_params_std.pkl.gz',data)
 
 # fit Sigma and eta with each form considered: powerlaw, simple, wellbehaved, and pitchfork
 types = ['powerlaw', 'simple', 'wellbehaved', 'pitchfork']
-num_colors = len(types)
-colors = plotting.generate_colors(num_colors)
+try:
+    colors = save_and_load.load_func('colors_types.pkl.gz')
+    print('Loading saved color choices')
+except FileNotFoundError:
+    num_colors = len(types)
+    colors = plotting.generate_colors(num_colors)
 params_Sigma = []
 params_eta = []
 for t in types:
