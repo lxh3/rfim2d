@@ -18,7 +18,6 @@ def slice_data(data, start, end):
     Output:
         datatemp - subsection of the data corresponding to r[start:end]
     """
-    # FIXME -- sphinx et al use numpy docstring notation
     rtemp = data[0][start:end]
     if len(data) == 4:
         r, s, A, As = data
@@ -35,7 +34,7 @@ def slice_data(data, start, end):
 
 
 def fit_subsets_of_r(filenames=[None, None], num=11,
-                     func_type='wellbehaved', verbose=False):
+                     func_type='well-behaved', verbose=False):
     """
     NOTE: This function currently requires that the simulation
           data for A and dM/dh be obtained from the same set
@@ -120,7 +119,7 @@ def plot_text(labels, params, std_params, figure_name=None):
     ax = plt.gca()
     ax.axes.get_xaxis().set_visible(False)
     ax.axes.get_yaxis().set_visible(False)
-    if figure_name is None:
+    if figure_name is not None:
         plt.savefig(figure_name, bbox_inches='tight')
     plt.show()
     plt.close()
@@ -128,7 +127,7 @@ def plot_text(labels, params, std_params, figure_name=None):
 
 
 def fit_and_plot_errors(filenames=[None, None], num=11,
-                        func_type='wellbehaved', figure_names=None,
+                        func_type='well-behaved', figure_names=None,
                         verbose=False):
     """
     Perform all fits, determine errors, and plot figures of

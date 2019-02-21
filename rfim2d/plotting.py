@@ -87,8 +87,8 @@ def setup_plot(labels, logscale, Range):
         plt.ylim(Range[1])
 
     # Set tick label size
-    ax.xaxis.set_tick_params(labelsize=20)
-    ax.yaxis.set_tick_params(labelsize=20)
+    ax.xaxis.set_tick_params(labelsize=16)
+    ax.yaxis.set_tick_params(labelsize=16)
 
     # Labels
     plt.xlabel(labels[0], fontsize=40)
@@ -98,12 +98,12 @@ def setup_plot(labels, logscale, Range):
 
 
 def finish_plot(ax, figure_name, loc='upper left',
-                legend_font_size=12, show=True):
+                legend_font_size=16, show=True):
     """
     Add a legend to the plot, save and close
     """
     # Legend
-    ax.legend(loc=loc,  shadow=True, fontsize=legend_font_size)
+    ax.legend(loc=loc, shadow=True, fontsize=legend_font_size)
     # Make sure labels fully visible
     plt.tight_layout()
     # Save figure and close plot
@@ -130,8 +130,12 @@ def scatter(data, labels, **kwargs):
     ax = setup_plot(labels, logscale, Range)
 
     # For each value of r, plot x vs y with a corresponding color
-    for r, x, y, color in zip(r_list, x_list, y_list, colors):
-        ax.scatter(x, y, c=color, label=r, lw=0)
+    for x, y, color in zip(x_list, y_list, colors):
+        ax.scatter(x, y, c=color, lw=0)
+
+    # Make legend points larger
+    for r, color in zip(r_list, colors):
+        plt.scatter([], [], c=color, s=50, label=r)
 
     finish_plot(ax, figure_name, show=show)
 
@@ -188,7 +192,8 @@ def collapse(data, function, labels, constant, constant_given_r, **kwargs):
             key, cgr = split_dict(cgr)
         x, y, y_from_function = function(x, y, cgr, constant)
         ax.scatter(x, y, color=color, label=str(r), lw=0)
-        ax.plot(x, y_from_function, color='black', lw=2)
+        if r == r_list[0]:
+            ax.plot(x, y_from_function, color='black', lw=2)
 
     finish_plot(ax, figure_name, show=show)
 
@@ -204,23 +209,13 @@ def compare(data, function, labels, constant, **kwargs):
     """
     x_list, y_list = data
 
-    if isinstance(constant, dict):
-        keys, constant = split_dict(constant)
+    types = kwargs.get('types', ['power law', 'truncated',
+                                 'well-behaved', 'pitchfork'])
+    linetypes = kwargs.get('linetypes',['--', '-', '-.', ':'])
 
-    if not isinstance(constant[0], list):
-        if isinstance(constant[0], dict):
-            constant_list = []
-            for c in constant:
-                key, params = split_dict(c)
-                constant_list.append(params)
-            constant = constant_list
-        else:
-            constant = [constant]
-
-    types = kwargs.get('types', ['powerlaw', 'simple',
-                                 'wellbehaved', 'pitchfork'])
     if isinstance(types, str):
         types = [types]
+        constant = [constant]
 
     loc = kwargs.get('loc', 'upper left')
 
@@ -228,14 +223,17 @@ def compare(data, function, labels, constant, **kwargs):
     logscale, Range, colors, figure_name, show = kwarg_list
 
     ax = setup_plot(labels, logscale, Range)
-    ax.scatter(x_list, y_list, color='k', label='data')
+    ax.scatter(x_list, y_list, s=50, color='k', label='data')
 
     scaled = kwargs.get('scaled', False)
     minmax = kwargs.get('minmax', None)
     for i, t in enumerate(types):
         x, y = generate_points(x_list, function, constant[i], t,
                                minmax=minmax, scaled=scaled)
-        ax.plot(x, y, color=colors[i], lw=2, label=t)
+        if len(types) == 1:
+            ax.plot(x, y, color=colors[i], lw=2, label=labels[1])
+        else:
+            ax.plot(x, y, linetypes[i], color=colors[i], lw=2, label=t)
 
     finish_plot(ax, figure_name, loc=loc, legend_font_size=20, show=show)
 
@@ -252,7 +250,7 @@ def plot_Sigma(r, Sigma, params, func_type, scaled=False,
     ls = [False, True]
     loc = 'upper right'
     labels = [r'$r$', r'$\Sigma(r)$']
-    compare([r, Sigma], scaling.Sigma_func, labels, params,
+    compare([r, Sigma], scaling.Sigma_func, labels, [params],
             logscale=ls, loc=loc, types=[func_type],
             figure_name=figure_name, scaled=scaled)
     return
@@ -266,15 +264,15 @@ def plot_eta(r, eta, params, func_type, scaled=False,
     ls = [False, True]
     loc = 'lower right'
     labels = [r'$r$', r'$\eta(r)$']
-    compare([r, eta], scaling.eta_func, labels, params,
+    compare([r, eta], scaling.eta_func, labels, [params],
             logscale=ls, loc=loc, types=[func_type],
             figure_name=figure_name, scaled=scaled)
     return
 
 
 def get_and_plot_Sigma_and_eta(filenames=[None, None],
-                               sigmaNu_fixed=True,
-                               func_type='wellbehaved',
+                               df_fixed=True,
+                               func_type='well-behaved',
                                figure_names=[None, None]):
     """
     Perform A and dM/dh fits to determine Sigma(r) and eta(r)
@@ -284,9 +282,9 @@ def get_and_plot_Sigma_and_eta(filenames=[None, None],
     data_Sigma = fitting.get_Sigma(filenames[0])
     data_eta = fitting.get_eta(filenames[1])
     ft = func_type
-    sNf = sigmaNu_fixed
+    sNf = df_fixed
 
-    params = fitting.perform_all_fits(filenames, sigmaNu_fixed=sNf,
+    params = fitting.perform_all_fits(filenames, df_fixed=sNf,
                                       func_type=ft, show_params=False)
     params_A, params_dMdh, params_Sigma, params_eta = params
 

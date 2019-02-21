@@ -126,19 +126,14 @@ def get_args():
     return data_Sigma, data_eta, args
 
 
-def perform_joint_fits(args, sigmaNu_fixed=True, func_type='wellbehaved'):
-    params, err = fitting.joint_fit(args, sigmaNu_fixed=sigmaNu_fixed,
-                                    func_type=func_type, show_params=False)
-    divvyed_params = fitting.divvy_params(params, sigmaNu_fixed, func_type)
-    params_Sigma, params_eta, prior = divvyed_params
-    params_Sigma = list(params_Sigma.values())
-    params_eta = list(params_eta.values())
+def perform_joint_fits(args, func_type='well-behaved'):
+    params_A, params_dMdh, params_Sigma, params_eta = fitting.perform_all_fits(func_type=func_type, show_params=False)
     return params_Sigma, params_eta
 
 
 def test_plotting_joint_fits():
     data_Sigma, data_eta, args = get_args()
-    types = ['powerlaw', 'simple', 'wellbehaved', 'pitchfork']
+    types = ['power law', 'truncated', 'well-behaved', 'pitchfork']
     for t in types:
         params_Sigma, params_eta = perform_joint_fits(args, func_type=t)
         labels = [r'$r$', r'$\Sigma(r)$']
@@ -160,7 +155,7 @@ def test_plotting_joint_fits():
 
 def test_comparing_all_forms():
     data_Sigma, data_eta, args = get_args()
-    types = ['powerlaw', 'simple', 'wellbehaved', 'pitchfork']
+    types = ['power law', 'truncated', 'well-behaved', 'pitchfork']
     pS = []
     pe = []
     for t in types:

@@ -8,10 +8,10 @@ plot_sizes = {
     'A': (6, 2.5),
     'dMdh': (9.5, 4),
     'Sigma': (6.5, 4),
-    'Sigma_powerlaw': (7.5, 4),
+    'Sigma_power law': (7.5, 4),
     'Sigma_pitchfork': (10, 4),
     'eta': (6.5, 4),
-    'eta_powerlaw': (7.5, 4),
+    'eta_power law': (7.5, 4),
     'eta_pitchfork': (11, 4),
     'joint': (11, 5)
 }
@@ -59,13 +59,13 @@ def get_dMdh_text(params, func_type=None):
     return text
 
 
-def get_Sigma_text(params, func_type='wellbehaved'):
+def get_Sigma_text(params, func_type='well-behaved'):
     """
     Get text associated with the fit of Sigma(r)
     """
     line1 = 'We have:'
     line2 = Sigma_functional_form(func_type=func_type)
-    if func_type == 'powerlaw':
+    if func_type == 'power law':
         rS, rc, sS = params['rScale'], params['rc'], params['sScale']
         sigma = params['sigma']
         line3 = (r'where $w=(r-r_c)/r_s$ and '
@@ -76,23 +76,23 @@ def get_Sigma_text(params, func_type='wellbehaved'):
         text = '\n'.join([line1, line2, line3, line4, line5])
     else:
         rS, sS = params['rScale'], params['sScale']
-        sigmaNu = params['sigmaNu']
-        B, F = params['B'], params['F']
+        df = params['df']
+        B, C = params['B'], params['C']
         line3 = r'where $w=r/r_s$ and $\Sigma$ is given a scale $\Sigma_s$'
         line4 = r'$r_s$ = {:.4f} and $s_s$ = {:.4f}'.format(rS, sS)
-        line5 = r'$\sigma\nu$ = {:.4f}'.format(sigmaNu)
-        line6 = 'B = {:.4f} and F = {:.4f}'.format(B, F)
+        line5 = r'$d_f$ = {:.4f}'.format(df)
+        line6 = 'B = {:.4f} and C = {:.4f}'.format(B, C)
         text = '\n'.join([line1, line2, line3, line4, line5, line6])
     return text
 
 
-def get_eta_text(params, func_type='wellbehaved'):
+def get_eta_text(params, func_type='well-behaved'):
     """
     Get text associated with the fit of eta(r)
     """
     line1 = 'We have:'
     line2 = eta_functional_form(func_type=func_type)
-    if func_type == 'powerlaw':
+    if func_type == 'power law':
         rS, rc, etaS = params['rScale'], params['rc'], params['etaScale']
         betaDelta = params['betaDelta']
         line3 = (r'where $w=(r-r_c)/r_s$ and '
@@ -103,18 +103,18 @@ def get_eta_text(params, func_type='wellbehaved'):
         text = '\n'.join([line1, line2, line3, line4, line5])
     else:
         rS, etaS = params['rScale'], params['etaScale']
-        betaDeltaOverNu = params['betaDeltaOverNu']
-        B, C = params['B'], params['C']
+        lambdaH = params['lambdaH']
+        B, F = params['B'], params['F']
         line3 = r'where $w=r/r_s$ and $\eta$ is given a scale $\eta_s$'
         line4 = (r'$r_s$ = {:.4f} and '
                  r'$\eta_s$ = {:.4f}'.format(rS, etaS))
-        line5 = r'$\beta\delta/\nu$ = {:.4f}'.format(betaDeltaOverNu)
-        line6 = 'B = {:.4f} and C = {:.4f}'.format(B, C)
+        line5 = r'$\lambda_h$ = {:.4f}'.format(lambdaH)
+        line6 = 'B = {:.4f} and F = {:.4f}'.format(B, F)
         text = '\n'.join([line1, line2, line3, line4, line5, line6])
     return text
 
 
-def get_joint_text(params, func_type='wellbehaved'):
+def get_joint_text(params, func_type='well-behaved'):
     """
     Get text associated with the joint fit of Sigma(r) and eta(r)
     """
@@ -122,7 +122,7 @@ def get_joint_text(params, func_type='wellbehaved'):
     line2 = Sigma_functional_form(func_type=func_type)
     line3 = eta_functional_form(func_type=func_type)
 
-    if func_type == 'powerlaw':
+    if func_type == 'power law':
         rS, rc, sS, etaS = [params['rScale'], params['rc'],
                             params['sScale'], params['etaScale']]
         sigma, betaDelta = params['sigma'], params['betaDelta']
@@ -136,15 +136,14 @@ def get_joint_text(params, func_type='wellbehaved'):
     else:
         rS, sS, etaS = [params['rScale'], params['sScale'],
                         params['etaScale']]
-        sigmaNu, betaDeltaOverNu = [params['sigmaNu'],
-                                    params['betaDeltaOverNu']]
+        df, lambdaH = [params['df'], params['lambdaH']]
         B, C, F = params['B'], params['C'], params['F']
         line4 = (r'where $w=r/r_s$ and $\eta$ and $\Sigma$ '
                  r'are given a scale $\eta_s$ and $\Sigma_s$ respectively')
         line5 = (r'$r_s$ = {:.4f}, $s_s$ = {:.4f}, '
                  r'$\eta_s$ = {:.4f}'.format(rS, sS, etaS))
-        line6 = (r'$\sigma\nu$ = {:.4f}, $\beta\delta/\nu$ = {:.4f}'
-                 r''.format(sigmaNu, betaDeltaOverNu))
+        line6 = (r'$d_f$ = {:.4f}, $\lambda_h$ = {:.4f}'
+                 r''.format(df, lambdaH))
         line7 = 'B = {:.4f}, C = {:.4f}, and F = {:.4f}'.format(B, C, F)
         text = '\n'.join([line1, line2, line3, line4, line5, line6, line7])
     return text
@@ -167,13 +166,13 @@ def get_text(params, fit_type, func_type=None):
         return text
 
 
-def print_fit_info(params, fit_type, func_type='wellbehaved',
+def print_fit_info(params, fit_type, func_type='well-behaved',
                    filename=None, show=True):
 
     text = get_text(params, fit_type, func_type=func_type)
 
     ft = func_type
-    if fit_type != 'joint' and (ft == 'powerlaw' or ft == 'pitchfork'):
+    if fit_type != 'joint' and (ft == 'power law' or ft == 'pitchfork'):
         fit_type = fit_type+'_'+func_type
 
     plt = make_plot(text, plot_sizes[fit_type])

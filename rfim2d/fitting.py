@@ -2,29 +2,33 @@ import numpy as np
 from scipy.optimize import leastsq
 
 from .save_and_load import save_func, load_svA, load_hvdMdh
-from .param_dict import split_dict, join_dict, get_keys, divvy_params
+from .param_dict import split_dict, get_keys, separate_params, generate_dict_with_fixed_params, split_dict_with_fixed_params
 from .residuals import As_residual, dMdh_residual
 from .residuals import Sigma_residual, eta_residual, joint_residual
 from .print_fit_info import print_fit_info
 
+
 params0_dict = {
-    'Sigma_powerlaw': [1.0, 1.0, 0.1, 0.0],
-    'Sigma_simple': [1.0, 10.0, 0.5, 0.1, 1.0],
-    'Sigma_simple_sigmaNu_fixed': [1.0, 10.0, 0.1, 1.0],
-    'Sigma_wellbehaved': [1.0, 10.0, 0.5, 0.1, 1.0],
-    'Sigma_wellbehaved_sigmaNu_fixed': [1.0, 10.0, 0.1, 1.0],
-    'Sigma_pitchfork': [1.0, 1.0, 0.5, 10.0, 1.0],
-    'eta_powerlaw': [1.0, 0.3, 1.0, 0.0],
-    'eta_simple': [1.0, 0.3, 1.0, 1.0, 0.1],
-    'eta_wellbehaved': [1.0, 0.3, 1.0, 1.0, 0.1],
-    'eta_pitchfork': [5.0, 130.0, 0.6, 4.0, 1.8],
-    'joint_powerlaw': [1.0, 1.0, 1.0, 0.1, 1.0, 0.0],
-    'joint_simple': [1.0, 10., 1.0, 1.0, 1.0, 0.1, 1.0, 1.0],
-    'joint_simple_sigmaNu_fixed': [1.0, 10., 1.0, 1.0, 0.1, 1.0, 1.0],
-    'joint_wellbehaved': [1.0, 10., 1.0, 1.0, 1.0, 0.1, 1.0, 1.0],
-    'joint_wellbehaved_sigmaNu_fixed': [1.0, 10., 1.0, 1.0, 0.1, 1.0, 1.0],
-    'joint_pitchfork': [5.0, -1.0, 100.0, 0.5, 1.0, 0.0, 10.0, 2.0]
+
+    'Sigma_power law': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 1.0), ('sigma', 0.1)]),
+    'Sigma_truncated': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 10.0), ('df', 2.0), ('B', 0.1), ('C', 1.0)]),
+    'Sigma_well-behaved': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 10.0), ('df', 2.0), ('B', 0.1), ('C', 1.0)]),
+    'Sigma_pitchfork': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 1.0), ('df', 2.0), ('B', 10.0), ('C', 1.0)]),
+
+    'eta_power law': dict([('rScale', 1.0), ('rc', 0.0), ('etaScale', 0.3), ('betaDelta',1.0)]),
+    'eta_truncated': dict([('rScale', 1.0), ('rc', 0.0), ('etaScale', 0.3), ('lambdaH', 1.0), ('B', 1.0), ('F', 0.1)]),
+    'eta_well-behaved': dict([('rScale', 1.0), ('rc', 0.0), ('etaScale', 0.3), ('lambdaH', 1.0), ('B', 1.0), ('F', 0.1)]),
+    'eta_pitchfork': dict([('rScale', 5.0), ('rc', 0.0), ('etaScale', 130.0), ('lambdaH', 0.6), ('B', 4.0), ('F', 1.8)]),
+
+    'joint_power law': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 1.0), ('etaScale', 1.0), ('sigma', 0.1), ('betaDelta', 1.0)]),
+    'joint_truncated': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 10.), ('etaScale', 1.0), ('df', 1.0), ('lambdaH', 1.0), ('B', 0.1), ('C', 1.0), ('F', 1.0)]),
+    'joint_well-behaved': dict([('rScale', 1.0), ('rc', 0.0), ('sScale', 10.), ('etaScale', 1.0), ('df', 1.0), ('lambdaH', 1.0), ('B', 0.1), ('C', 1.0), ('F', 1.0)]),
+    'joint_pitchfork': dict([('rScale', 5.0), ('rc', 0.0), ('sScale', -1.0), ('etaScale', 100.0), ('df', 2.0), ('lambdaH', 1.0), ('B', 0.0), ('C', 10.0), ('F', 2.0)]),
+
 }
+
+
+default_fixed = dict([('df',2.), ('C',0.)])
 
 
 def perform_fit(residual_func, params0, args, verbose=False):
@@ -40,6 +44,7 @@ def perform_fit(residual_func, params0, args, verbose=False):
         params - best fit value of the parameters
         err - error in the fit
     """
+   
     if isinstance(params0, dict):
         keys, params0 = split_dict(params0)
 
@@ -51,19 +56,15 @@ def perform_fit(residual_func, params0, args, verbose=False):
     if verbose:
         print('cost=', (res*res).sum())
 
-    try:
-        params = join_dict(keys, params)
-    except NameError:
-        pass
-
     return params, err
 
 
-def save_and_show(params, fit_type, func_type='wellbehaved',
+def save_and_show(params, fit_type, func_type='well-behaved',
                   filename=None, show=True):
     """
     Save fit parameters and/or plot fit information in figure format
     """
+    assert(isinstance(params, dict))
     if filename is not None:
         save_func(filename+'.pkl.gz', params)
         print_fit_info(params, fit_type, func_type=func_type,
@@ -183,8 +184,8 @@ def get_Sigma(filename=None, data=None, show_params=False):
     return r, params['Sigma']
 
 
-def Sigma_fit(args, params0=None, sigmaNu_fixed=True,
-              func_type='wellbehaved', filename=None,
+def Sigma_fit(args, params0=None, fixed_dict=default_fixed,
+              func_type='well-behaved', filename=None,
               verbose=False, show_params=True):
     """
     Perform the fit of Sigma(r)
@@ -195,12 +196,11 @@ def Sigma_fit(args, params0=None, sigmaNu_fixed=True,
             Sigma - list of Sigma values at each r
         params0 - optional initial values for the constants
                   in the functional form of Sigma
-        sigmaNu_fixed - flag for whether to fit the value of
-                        sigmaNu or fix it to 0.5
+        fixed_dict - dictionary of parameters to be fixed
         func_type - which form of Sigma(r) to use. Options:
-            'powerlaw' - Sigma(r) derived with dw/dl = (1/nu) w
-            'simple' - Sigma(r) derived with dw/dl = w^2 + B w^3
-            'wellbehaved' - Sigma(r) derived with dw/dl = w^2 / (1 + B w)
+            'power law' - Sigma(r) derived with dw/dl = (1/nu) w
+            'truncated' - Sigma(r) derived with dw/dl = w^2 + B w^3
+            'well-behaved' - Sigma(r) derived with dw/dl = w^2 / (1 + B w)
             'pitchfork' - Sigma(r) derived with dw/dl = w^3 + B w^5
         filename - data is saved under 'filename' if a file name is given
         verbose - flag to print cost
@@ -213,30 +213,26 @@ def Sigma_fit(args, params0=None, sigmaNu_fixed=True,
     """
     r_list, Sigma = args
 
-    if func_type == 'powerlaw' or func_type == 'pitchfork':
-        sigmaNu_fixed = False
-
     if params0 is None:
-        if sigmaNu_fixed:
-            params0_key = 'Sigma_'+func_type+'_sigmaNu_fixed'
-        else:
-            params0_key = 'Sigma_'+func_type
+        params0_key = 'Sigma_'+func_type
         params0 = params0_dict[params0_key]
 
-    fullargs = [r_list, Sigma, sigmaNu_fixed, func_type]
+    if fixed_dict is not None:
+        keys = list(params0.copy().keys())
+        params0 = split_dict_with_fixed_params(params0, fixed_dict)
+    else:
+        keys, params0 = split_dict(params0)
+
+    fullargs = [r_list, Sigma, keys, fixed_dict, func_type]
     params, err = perform_fit(Sigma_residual, params0, fullargs,
                               verbose=verbose)
 
-    keys = get_keys('Sigma', func_type=func_type)
-    if sigmaNu_fixed and func_type != 'powerlaw':
-        params = list(params)
-        params.insert(2, 0.5)
-    params = dict(zip(keys, params))
+    param_dict = generate_dict_with_fixed_params(params, keys, fixed_dict)
 
-    save_and_show(params, 'Sigma', func_type=func_type,
+    save_and_show(param_dict, 'Sigma', func_type=func_type,
                   filename=filename, show=show_params)
 
-    return params, err
+    return param_dict, err
 
 
 def get_eta(filename=None, data=None, show_params=False):
@@ -251,8 +247,8 @@ def get_eta(filename=None, data=None, show_params=False):
     return r, params['eta']
 
 
-def eta_fit(args, params0=None, func_type='wellbehaved', filename=None,
-            verbose=False, show_params=True):
+def eta_fit(args, params0=None, fixed_dict=default_fixed, func_type='well-behaved', 
+            filename=None, verbose=False, show_params=True):
     """
     Perform the fit of eta(r)
     Input:
@@ -262,10 +258,11 @@ def eta_fit(args, params0=None, func_type='wellbehaved', filename=None,
             eta - list of eta values at each r
         params0 - optional initial values for the constants in the
                   functional form of eta
+        fixed_dict - dictionary of parameters to be fixed
         func_type - which form of eta(r) to use. Options:
-            'powerlaw' - eta(r) derived with dw/dl = (1/nu) w
-            'simple' - eta(r) derived with dw/dl = w^2 + B w^3
-            'wellbehaved' - eta(r) derived with dw/dl = w^2 / (1 + B w)
+            'power law' - eta(r) derived with dw/dl = (1/nu) w
+            'truncated' - eta(r) derived with dw/dl = w^2 + B w^3
+            'well-behaved' - eta(r) derived with dw/dl = w^2 / (1 + B w)
             'pitchfork' - eta(r) derived with dw/dl = w^3 + B w^5
         filename - data is saved under 'filename' if a file name is given
         verbose - flag to print cost
@@ -282,21 +279,26 @@ def eta_fit(args, params0=None, func_type='wellbehaved', filename=None,
         params0_key = 'eta_'+func_type
         params0 = params0_dict[params0_key]
 
-    fullargs = [r_list, eta, func_type]
-    params, err = perform_fit(eta_residual, params0, fullargs, verbose=verbose)
+    if fixed_dict is not None:
+        keys = list(params0.copy().keys())
+        params0 = split_dict_with_fixed_params(params0, fixed_dict)
+    else:
+        keys, params0 = split_dict(params0)
 
-    keys = get_keys('eta', func_type=func_type)
-    values = params
-    params = dict(zip(keys, values))
+    fullargs = [r_list, eta, keys, fixed_dict, func_type]
+    params, err = perform_fit(eta_residual, params0, fullargs,
+                              verbose=verbose)
 
-    save_and_show(params, 'eta', func_type=func_type,
+    param_dict = generate_dict_with_fixed_params(params, keys, fixed_dict)
+
+    save_and_show(param_dict, 'eta', func_type=func_type,
                   filename=filename, show=show_params)
 
-    return params, err
+    return param_dict, err
 
 
-def joint_fit(args, params0=None, sigmaNu_fixed=True,
-              func_type='wellbehaved', filename=None,
+def joint_fit(args, params0=None, fixed_dict=default_fixed,
+              func_type='well-behaved', filename=None,
               verbose=False, show_params=True):
     """
     Perform the joint fit of Sigma(r) and eta(r)
@@ -308,12 +310,11 @@ def joint_fit(args, params0=None, sigmaNu_fixed=True,
             eta - list of eta values at each r
         params0 - optional initial values for the constants in the
                   functional forms of Sigma and eta
-        sigmaNu_fixed - flag for whether to fit the value of sigmaNu
-                        or fix it to 0.5
+        fixed_dict - dictionary of parameters to be fixed
         func_type - which form of eta(r) to use. Options:
-            'powerlaw' - eta(r) derived with dw/dl = (1/nu) w
-            'simple' - eta(r) derived with dw/dl = w^2 + B w^3
-            'wellbehaved' - eta(r) derived with dw/dl = w^2 / (1 + B w)
+            'power law' - eta(r) derived with dw/dl = (1/nu) w
+            'truncated' - eta(r) derived with dw/dl = w^2 + B w^3
+            'well-behaved' - eta(r) derived with dw/dl = w^2 / (1 + B w)
             'pitchfork' - eta(r) derived with dw/dl = w^3 + B w^5
         filename - data is saved under 'filename' if a file name is given
         verbose - flag to print cost
@@ -326,38 +327,31 @@ def joint_fit(args, params0=None, sigmaNu_fixed=True,
     """
     rA, Sigma, rdMdh, eta = args
 
-    if func_type == 'powerlaw' or func_type == 'pitchfork':
-        sigmaNu_fixed = False
-
     if params0 is None:
-        if sigmaNu_fixed:
-            params0_key = 'joint_'+func_type+'_sigmaNu_fixed'
-        else:
-            params0_key = 'joint_'+func_type
+        params0_key = 'joint_'+func_type
         params0 = params0_dict[params0_key]
 
-    fullargs = [rA, Sigma, rdMdh, eta, sigmaNu_fixed, func_type]
+    if fixed_dict is not None:
+        keys = list(params0.copy().keys())
+        params0 = split_dict_with_fixed_params(params0, fixed_dict)
+    else:
+        keys, params0 = split_dict(params0)
+
+    fullargs = [rA, Sigma, rdMdh, eta, keys, fixed_dict, func_type]
     params, err = perform_fit(joint_residual, params0, fullargs,
                               verbose=verbose)
 
-    keys = get_keys('joint', func_type=func_type)
-    if sigmaNu_fixed and func_type != 'powerlaw':
-        params = list(params)
-        params.insert(3, 0.5)
-    params = dict(zip(keys, params))
+    param_dict = generate_dict_with_fixed_params(params, keys, fixed_dict)
 
-    save_and_show(params, 'joint', func_type=func_type,
+    save_and_show(param_dict, 'joint', func_type=func_type,
                   filename=filename, show=show_params)
 
-    return params, err
+    return param_dict, err
 
 
-# Perform all fits (A, dMdh, and Sigma and eta jointly)
-#  and return parameters
-
-def perform_all_fits(filenames=[None, None], data=None, sigmaNu_fixed=True,
-                     func_type='wellbehaved', verbose=False,
-                     show_params=True):
+def perform_all_fits(filenames=[None, None], data=None, 
+                     fixed_dict=default_fixed, func_type='well-behaved', 
+                     verbose=False, show_params=True):
     """
     Perform the fit of A, dMdh, Sigma and eta and return values
     Input:
@@ -370,12 +364,11 @@ def perform_all_fits(filenames=[None, None], data=None, sigmaNu_fixed=True,
                                    data was provided here manually
             dataA - [r, s, A, As]
             datadMdh - [r, h, dMdh]
-        sigmaNu_fixed - flag for whether to fit the value of sigmaNu
-                        or fix it to 0.5
+        fixed_dict - dictionary of parameters to be fixed
         func_type - which form of Sigma(r) to use. Options:
-            'powerlaw' - Sigma(r) derived with dw/dl = (1/nu) w
-            'simple' - Sigma(r) derived with dw/dl = w^2 + B w^3
-            'wellbehaved' - Sigma(r) derived with dw/dl = w^2 / (1 + B w)
+            'power law' - Sigma(r) derived with dw/dl = (1/nu) w
+            'truncated' - Sigma(r) derived with dw/dl = w^2 + B w^3
+            'well-behaved' - Sigma(r) derived with dw/dl = w^2 / (1 + B w)
             'pitchfork' - Sigma(r) derived with dw/dl = w^3 + B w^5
         save - whether to save the fit data
         verbose - flag to print cost
@@ -387,9 +380,6 @@ def perform_all_fits(filenames=[None, None], data=None, sigmaNu_fixed=True,
         params_Sigma - fit values found for Sigma
         params_eta - fit values found for eta
     """
-    if func_type == 'powerlaw' or func_type == 'pitchfork':
-        sigmaNu_fixed = False
-
     if data is None:
         rA, s, A, As = load_svA(filename=filenames[0])
         rdMdh, h, dMdh = load_hvdMdh(filename=filenames[1])
@@ -408,11 +398,9 @@ def perform_all_fits(filenames=[None, None], data=None, sigmaNu_fixed=True,
     eta = params_dMdh['eta']
 
     args = [rA, Sigma, rdMdh, eta]
-    params, err = joint_fit(args, sigmaNu_fixed=sigmaNu_fixed,
+    params, err = joint_fit(args, fixed_dict=fixed_dict,
                             func_type=func_type, verbose=verbose,
                             show_params=show_params)
-    divvyed_params = divvy_params(params, sigmaNu_fixed=sigmaNu_fixed,
-                                  func_type=func_type)
-    params_Sigma, params_eta, prior = divvyed_params
+    params_Sigma, params_eta = separate_params(params, func_type=func_type)
 
     return params_A, params_dMdh, params_Sigma, params_eta
