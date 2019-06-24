@@ -1,9 +1,13 @@
 from . import scaling, fitting
 from .scaling import Sigma_func, eta_func
 from .param_dict import split_dict
+from .errors import fit_and_plot_errors
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+default_fixed = dict([('df', 2.), ('C', 0.)])
 
 
 # SUPPORTING FUNCTIONS
@@ -24,8 +28,9 @@ def parse_kwargs(kwargs, a_list):
     colors = kwargs.get('colors', default_colors)
     figure_name = kwargs.get('figure_name', None)
     show = kwargs.get('show', True)
+    dist = kwargs.get('dist', None)
 
-    values = [logscale, Range, colors, figure_name, show]
+    values = [logscale, Range, colors, figure_name, show, dist]
 
     return values
 
@@ -71,7 +76,7 @@ def setup_plot(labels, logscale, Range):
     on which the data will be displayed
     """
     # Initialize Plot
-    plt.figure(figsize=(10., 5.*(np.sqrt(5.)-1)))
+    fig = plt.figure(figsize=(10., 5.*(np.sqrt(5.)-1)))
     ax = plt.subplot(111)
 
     # Set logscale if applicable
@@ -87,14 +92,14 @@ def setup_plot(labels, logscale, Range):
         plt.ylim(Range[1])
 
     # Set tick label size
-    ax.xaxis.set_tick_params(labelsize=16)
-    ax.yaxis.set_tick_params(labelsize=16)
+    ax.xaxis.set_tick_params(labelsize=20)
+    ax.yaxis.set_tick_params(labelsize=20)
 
     # Labels
-    plt.xlabel(labels[0], fontsize=40)
-    plt.ylabel(labels[1], fontsize=40)
+    plt.xlabel(labels[0], fontsize=40, labelpad=10)
+    plt.ylabel(labels[1], fontsize=40, labelpad=10)
 
-    return ax
+    return fig, ax
 
 
 def finish_plot(ax, figure_name, loc='upper left',
@@ -125,9 +130,9 @@ def scatter(data, labels, **kwargs):
     r_list, x_list, y_list = data
 
     kwarg_list = parse_kwargs(kwargs, r_list)
-    logscale, Range, colors, figure_name, show = kwarg_list
+    logscale, Range, colors, figure_name, show, dist = kwarg_list
 
-    ax = setup_plot(labels, logscale, Range)
+    fig, ax = setup_plot(labels, logscale, Range)
 
     # For each value of r, plot x vs y with a corresponding color
     for x, y, color in zip(x_list, y_list, colors):
@@ -154,8 +159,8 @@ def scatter_vs_function(data, function, labels, constant,
         keys, constant = split_dict(constant)
 
     kwarg_list = parse_kwargs(kwargs, r_list)
-    logscale, Range, colors, figure_name, show = kwarg_list
-    ax = setup_plot(labels, logscale, Range)
+    logscale, Range, colors, figure_name, show, dist = kwarg_list
+    fig, ax = setup_plot(labels, logscale, Range)
 
     zipped = zip(r_list, x_list, y_list, constant_given_r, colors)
     for r, x, y, cgr, color in zipped:
@@ -182,9 +187,9 @@ def collapse(data, function, labels, constant, constant_given_r, **kwargs):
         keys, constant = split_dict(constant)
 
     kwarg_list = parse_kwargs(kwargs, r_list)
-    logscale, Range, colors, figure_name, show = kwarg_list
+    logscale, Range, colors, figure_name, show, dist = kwarg_list
 
-    ax = setup_plot(labels, logscale, Range)
+    fig, ax = setup_plot(labels, logscale, Range)
 
     zipped = zip(r_list, x_list, y_list, constant_given_r, colors)
     for r, x, y, cgr, color in zipped:
@@ -192,15 +197,74 @@ def collapse(data, function, labels, constant, constant_given_r, **kwargs):
             key, cgr = split_dict(cgr)
         x, y, y_from_function = function(x, y, cgr, constant)
         ax.scatter(x, y, color=color, label=str(r), lw=0)
-        if r == r_list[0]:
-            ax.plot(x, y_from_function, color='black', lw=2)
+        #if r == r_list[0]:
+        #    ax.plot(x, y_from_function, color='black', lw=2)
 
     finish_plot(ax, figure_name, show=show)
 
     return
 
 
-def compare(data, function, labels, constant, **kwargs):
+def collapse_with_inset(data, function, labels, constant, constant_given_r, **kwargs):
+    """
+    Plot the scaling collapse of the data (x,y) and fitting function
+    output (x,function(y)) (Used to plot the scaling collapse
+    of A and dM/dh) - contains inset with the raw data
+    """
+    r_list, x_list, y_list = data
+
+    if isinstance(constant, dict):
+        keys, constant = split_dict(constant)
+
+    kwarg_list = parse_kwargs(kwargs, r_list)
+    logscale, Range, colors, figure_name, show, dist = kwarg_list
+
+    fig, ax = setup_plot(labels, logscale, Range)
+
+    zipped = zip(r_list, x_list, y_list, constant_given_r, colors)
+    for r, x, y, cgr, color in zipped:
+        if isinstance(cgr, dict):
+            key, cgr = split_dict(cgr)
+        x, y, y_from_function = function(x, y, cgr, constant)
+        ax.scatter(x, y, color=color, label=str(r), lw=0)
+
+    if dist == 'A':
+        Range2 = [[1e0,1e5],[1e-4,0.75e0]]
+    elif dist == 'dMdh':
+        Range2 = [[-3,4], [1e-2,30]]
+    else:
+        Range2 = None
+
+    inset1 = fig.add_axes([.175, .65, .3, .3])
+    for i in range(len(r_list)):
+        inset1.scatter(x_list[i], y_list[i], color=colors[i], s=10)
+        if Range2 is not None:
+            inset1.set_xlim(Range2[0])
+            inset1.set_ylim(Range2[1])
+
+    # Set logscale if applicable
+    if logscale[0]:
+        xscale = 'log'
+    else:
+        xscale = 'linear'
+
+    plt.setp(inset1, xticks=[], yticks=[], xscale=xscale, yscale='log')
+    plt.setp(inset1.get_xticklabels(), visible=False);
+    plt.setp(inset1.get_yticklabels(), visible=False);
+
+    # Make sure labels fully visible
+    plt.tight_layout()
+    # Save figure and close plot
+    if figure_name is not None:
+        plt.savefig(figure_name, bbox_inches='tight')
+    if show:
+        plt.show()
+    plt.close()
+
+    return
+
+
+def compare(data, function, labels, constant, errors=None, **kwargs):
     """
     Create a scatter plot of the data (x,y) and the best fit
     using each of the functional forms (x,function(y))
@@ -220,10 +284,14 @@ def compare(data, function, labels, constant, **kwargs):
     loc = kwargs.get('loc', 'upper left')
 
     kwarg_list = parse_kwargs(kwargs, types)
-    logscale, Range, colors, figure_name, show = kwarg_list
+    logscale, Range, colors, figure_name, show, dist = kwarg_list
 
-    ax = setup_plot(labels, logscale, Range)
+    fig, ax = setup_plot(labels, logscale, Range)
     ax.scatter(x_list, y_list, s=50, color='k', label='data')
+
+    if errors is not None:
+        r, func_val, err = errors
+        ax.errorbar(r, func_val, yerr = err, color='k', ls='none')
 
     scaled = kwargs.get('scaled', False)
     minmax = kwargs.get('minmax', None)
@@ -242,8 +310,8 @@ def compare(data, function, labels, constant, **kwargs):
 
 # Get and plot Sigma and eta
 
-def plot_Sigma(r, Sigma, params, func_type, scaled=False,
-               figure_name='Sigma_fit.png'):
+def plot_Sigma(r, Sigma, params, func_type, errors=None, 
+               scaled=False, figure_name='Sigma_fit.png'):
     """
     Plot default Sigma plot using compare function
     """
@@ -251,13 +319,13 @@ def plot_Sigma(r, Sigma, params, func_type, scaled=False,
     loc = 'upper right'
     labels = [r'$r$', r'$\Sigma(r)$']
     compare([r, Sigma], scaling.Sigma_func, labels, [params],
-            logscale=ls, loc=loc, types=[func_type],
+            errors=errors, logscale=ls, loc=loc, types=[func_type],
             figure_name=figure_name, scaled=scaled)
     return
 
 
-def plot_eta(r, eta, params, func_type, scaled=False,
-             figure_name='eta_fit.png'):
+def plot_eta(r, eta, params, func_type, errors=None, 
+             scaled=False, figure_name='eta_fit.png'):
     """
     Plot default eta plot using compare function
     """
@@ -265,14 +333,14 @@ def plot_eta(r, eta, params, func_type, scaled=False,
     loc = 'lower right'
     labels = [r'$r$', r'$\eta(r)$']
     compare([r, eta], scaling.eta_func, labels, [params],
-            logscale=ls, loc=loc, types=[func_type],
+            errors=errors, logscale=ls, loc=loc, types=[func_type],
             figure_name=figure_name, scaled=scaled)
     return
 
 
 def get_and_plot_Sigma_and_eta(filenames=[None, None],
-                               df_fixed=True,
-                               func_type='well-behaved',
+                               df_fixed=default_fixed,
+                               func_type='truncated',
                                figure_names=[None, None]):
     """
     Perform A and dM/dh fits to determine Sigma(r) and eta(r)
@@ -281,26 +349,38 @@ def get_and_plot_Sigma_and_eta(filenames=[None, None],
     """
     data_Sigma = fitting.get_Sigma(filenames[0])
     data_eta = fitting.get_eta(filenames[1])
-    ft = func_type
-    sNf = df_fixed
 
-    params = fitting.perform_all_fits(filenames, df_fixed=sNf,
-                                      func_type=ft, show_params=False)
-    params_A, params_dMdh, params_Sigma, params_eta = params
+    func, params = fit_and_plot_errors(filenames=filenames, 
+                                       fixed_dict=df_fixed, 
+                                       func_type=func_type)
+    params_Sigma = params[0]
+    params_eta = params[2]
+
+    r_errors = list(func[1].keys())
+    Sig_vals_errors = [func[0][i] for i in r_errors]
+    err = list(func[1].values())
+    Sigma_errors = [r_errors, Sig_vals_errors, err]
+
+    r_errors = list(func[3].keys())
+    eta_vals_errors = [func[2][i] for i in r_errors]
+    err = list(func[3].values())
+    eta_errors = [r_errors, eta_vals_errors, err]
 
     ls = [False, True]
     # Plot Sigma
     loc = 'upper right'
     labels = [r'$r$', r'$\Sigma(r)$']
-    params_Sigma_vals = list(params_Sigma.values())
-    compare(data_Sigma, Sigma_func, labels, params_Sigma_vals,
-            logscale=ls, loc=loc, types=[func_type],
-            figure_name=figure_names[0])
+    compare(data_Sigma, Sigma_func, labels, [params_Sigma],
+            errors=Sigma_errors, logscale=ls, loc=loc, 
+            types=[func_type], figure_name=figure_names[0])
     # Plot eta
     loc = 'lower right'
     labels = [r'$r$', r'$\eta(r)$']
-    params_eta_vals = list(params_eta.values())
-    compare(data_eta, eta_func, labels, params_eta_vals,
-            logscale=ls, loc=loc, types=[func_type],
-            figure_name=figure_names[1])
-    return data_Sigma, params_Sigma, data_eta, params_eta
+    compare(data_eta, eta_func, labels, [params_eta],
+            errors=eta_errors, logscale=ls, loc=loc, 
+            types=[func_type], figure_name=figure_names[1])
+
+    data = [data_Sigma, params_Sigma, Sigma_errors, 
+            data_eta, params_eta, eta_errors]
+
+    return data

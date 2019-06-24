@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 import rfim2d
-from rfim2d import save_and_load, fitting, plotting, scaling, errors
+from rfim2d import save_and_load, fitting, plotting, scaling, errors, param_dict
 
 import matplotlib.style as style
 style.use('seaborn-paper')
@@ -26,7 +26,7 @@ except FileNotFoundError:
 
 # plot s vs sA
 data = [r, s, sA]
-labels = [r'$s$',r'$sA(s|r)$']
+labels = [r'$s$',r'$sA(s|w)$']
 logscale=[True,True]
 Range = [[2e-1,1e5],[1e-3,1e0]]
 figure_name = 'saves/A.png'
@@ -42,16 +42,21 @@ constant = [params['a'], params['b']]
 
 data = [r, s, sA]
 function = scaling.As_Scaling
-labels = [r'$s$',r'$sA(s|r)$']
+labels = [r'$s$',r'$sA(s|w)$']
 figure_name = 'saves/A_fits.png'
 plotting.scatter_vs_function(data, function, labels, constant, constant_given_r = constant_given_r, logscale=logscale, Range=Range, figure_name=figure_name, colors=colors)
 
 # plot scaling collapse
 function = scaling.As_Collapse
-labels = [r'$\frac{s}{\Sigma(r)}$',r'$sA(s|r)$']
+labels = [r'$\frac{s}{\Sigma(w)}$',r'$sA(s|w)$']
 Range = [[1e-4,10],[1e-3,1e0]]
 figure_name = 'saves/A_collapse.png'
 plotting.collapse(data, function, labels, constant, constant_given_r, logscale=logscale, Range=Range, figure_name=figure_name, colors=colors)
+
+#plot scaling collapse with inset
+labels = [r'$s/\Sigma(w)$',r'$sA(s|w)$']
+figure_name = 'saves/A_collapse_with_inset.png'
+plotting.collapse_with_inset(data, function, labels, constant, constant_given_r, logscale=logscale, Range=Range, figure_name=figure_name, colors=colors, dist='A')
 
 #### DERIVATIVE OF THE MAGNETIZATION WITH RESPECT TO THE FIELD ####
 
@@ -60,7 +65,7 @@ r,h,dMdh = save_and_load.load_hvdMdh()
 
 # plot h vs dMdh
 data = [r,h,dMdh]
-labels = [r'$h$', r'$\frac{dM}{dh}(h|r)$']
+labels = [r'$h$', r'$\frac{dM}{dh}(h|w)$']
 logscale = [False,True]
 Range = [[-3,4], [1e-2,30]]
 figure_name = 'saves/dMdh.png'
@@ -75,18 +80,23 @@ constant_given_r = np.asarray([params['hMax'], params['eta']]).T
 constant = [params['a'], params['b'], params['c'], params['d']]
 
 function = scaling.dMdh_Scaling
-labels = [r'$h$', r'$\frac{dM}{dh}(h|r)$']
+labels = [r'$h$', r'$\frac{dM}{dh}(h|w)$']
 Range = [[-1,3],[1e-2,30]]
 figure_name = 'saves/dMdh_fits.png'
 plotting.scatter_vs_function(data, function, labels, constant, constant_given_r = constant_given_r, logscale=logscale, Range=Range, figure_name=figure_name, colors=colors)
 
 # plot scaling collapse
 function = scaling.dMdh_Collapse
-labels = [r'$\frac{h-h_{max}}{\eta(r)}$', r'$\eta(r) \frac{dM}{dh}(h|r)$']
+labels = [r'$\frac{h-h_{max}}{\eta(w)}$', r'$\eta(w) \frac{dM}{dh}(h|w)$']
 logscale=[False,True]
-Range = [[-5,5],[1e-2,2]]
+Range = [[-6,4],[1e-2,3]]
 figure_name = 'saves/dMdh_collapse.png'
 plotting.collapse(data, function, labels, constant, constant_given_r, logscale=logscale, Range=Range, figure_name=figure_name, colors=colors)
+
+#plot scaling collapse with inset
+labels = [r'$\frac{h-h_{max}}{\eta(w)}$', r'$\eta(w) \frac{dM}{dh}(h|w)$']
+figure_name = 'saves/dMdh_collapse_with_inset.png'
+plotting.collapse_with_inset(data, function, labels, constant, constant_given_r, logscale=logscale, Range=Range, figure_name=figure_name, colors=colors, dist='dMdh')
 
 #### NONLINEAR SCALING VARIABLES: SIGMA(R) AND ETA(R) ####
 
@@ -101,7 +111,9 @@ except FileNotFoundError:
 r,Sigma = fitting.get_Sigma()
 r,eta = fitting.get_eta()
 args = [r, Sigma, r, eta]
-pA,pM,params_Sigma,params_eta = fitting.perform_all_fits()
+fixed_dict = dict([('df',2.),('C',0.)])
+params, err = fitting.joint_fit(args,fixed_dict=fixed_dict, func_type='truncated')
+params_Sigma, params_eta =  param_dict.separate_params(params, func_type='truncated')
 
 # plot fits
 labels = [r'$r$',r'$\Sigma(r)$']
@@ -117,7 +129,7 @@ loc = 'lower right'
 color = [colors[2]]
 plotting.compare([r,eta], scaling.eta_func, labels, [params_eta], logscale=logscale, loc=loc, figure_name=figure_name, types=['well-behaved'], colors=color)
 
-#### ERROR BARS ####
+#### ERROR BARS #### 
 
 # calculate and save the error bars
 figure_names = ['saves/Sigma_params_std.png','saves/eta_params_std.png']
