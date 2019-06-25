@@ -1,5 +1,5 @@
 from .save_and_load import load_svA, load_hvdMdh
-from .fitting import perform_all_fits
+from .fitting import perform_all_fits, get_Sigma, get_eta
 
 import pandas as pd
 import numpy as np
@@ -240,3 +240,30 @@ def fit_and_plot_errors(filenames=[None, None], num=11,
                   figure_name=figure_names[1])
 
     return func_data, param_data
+
+
+def get_function_errors(func_type='truncated'):
+    """
+    Get errors for Sigma and eta (used to produce Figure 3: 
+    see plotting.py 'plot_Sigma_compare_with_eta_inset')
+    """
+
+    r,Sigma = get_Sigma()
+    r,eta = get_eta()
+
+    func, params = fit_and_plot_errors(func_type=func_type)
+
+    #Sigma
+    r_small = list(func[1].keys())
+    Sig_vals = [func[0][i] for i in r_small]
+    err = list(func[1].values())
+    Sigma_errors = [r_small, Sig_vals, err]
+
+    #eta
+    r_small = list(func[3].keys())
+    eta_vals = [func[2][i] for i in r_small]
+    err = list(func[3].values())
+    eta_errors = [r_small, eta_vals, err]     # Calculate error bars
+
+    return Sigma_errors, eta_errors
+

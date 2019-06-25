@@ -404,3 +404,41 @@ def perform_all_fits(filenames=[None, None], data=None,
     params_Sigma, params_eta = separate_params(params, func_type=func_type)
 
     return params_A, params_dMdh, params_Sigma, params_eta
+
+
+def compare_fits(r, Sigma, eta):
+    """
+    Get params for fits to 3 forms (used to produce Figure 3: 
+    see plotting.py 'plot_Sigma_compare_with_eta_inset')
+    """
+    #power law
+    params0_powerlaw = dict([('rScale',1.0), ('rc', 0.0),
+                             ('sScale', 10.), ('etaScale', 1.0),
+                             ('sigma', 0.1), ('betaDelta', 1.0),
+                             ('B', 1.0)])
+    fixed_dict = None
+    params_powerlaw, err = joint_fit([r,Sigma,r,eta], fixed_dict=fixed_dict, 
+                                     func_type='power law', params0=params0_powerlaw,
+                                     verbose=False, show_params=False)
+    #pitchfork
+    params0_pitchfork = dict([('rScale',1.0), ('rc', 0.0),
+                              ('sScale', 10.), ('etaScale', 1.0),
+                              ('df', 2.0), ('lambdaH', 1.0),
+                              ('B', 1.0), ('C', 0.0),
+                              ('F', 1.0)])
+    fixed_dict = None 
+    params_pitchfork, err = joint_fit([r,Sigma,r,eta], fixed_dict=fixed_dict,
+                                      func_type='pitchfork', params0=params0_pitchfork,
+                                      verbose=False, show_params=False)
+    #truncated
+    params0_truncated = dict([('rScale',1.0), ('rc', 0.0),
+                              ('sScale', 10.), ('etaScale', 1.0),
+                              ('df', 2.0), ('lambdaH', 1.0),
+                              ('B', 1.0), ('C', 0.0),
+                              ('F', 1.0)])
+    fixed_dict = dict([('df',2.),('C',0.)])
+    params_truncated, err = joint_fit([r,Sigma,r,eta], fixed_dict=fixed_dict,
+                                      func_type='truncated',params0=params0_truncated,
+                                      verbose=False, show_params=False)
+    return params_powerlaw, params_pitchfork, params_truncated
+

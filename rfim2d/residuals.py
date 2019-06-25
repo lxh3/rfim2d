@@ -124,3 +124,16 @@ def joint_residual(params, args):
 
     residual = np.concatenate([residualSigma, residualeta])
     return residual
+
+
+def linear_function(x, params):
+    A, B = params
+    return A*x + B
+
+
+def linear_residual(params, args):
+    r, pS = args
+    r = np.asarray(r)
+    residual = np.asarray(1./log(Sigma_func(r,pS))) - np.asarray(linear_function(r, params))
+    return residual
+

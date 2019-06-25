@@ -161,3 +161,11 @@ figure_name = 'saves/eta_comparison.png'
 loc = 'lower right'
 plotting.compare(data, scaling.eta_func, labels, params_eta, logscale=logscale, loc=loc, figure_name=figure_name, colors=colors)
 
+# plot Figure 3 in main text
+plotting.plot_Sigma_compare_with_eta_inset('saves/comparison.png')
+
+# plot Figure 4 in the main text
+plotting.plot_logplot('saves/logplot.png')
+
+# plot Figures in Supplement
+plotting.compare_plots_supplement()

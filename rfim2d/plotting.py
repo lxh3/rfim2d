@@ -1,7 +1,8 @@
 from . import scaling, fitting
 from .scaling import Sigma_func, eta_func
-from .param_dict import split_dict
-from .errors import fit_and_plot_errors
+from .param_dict import split_dict, separate_params
+from .errors import fit_and_plot_errors, get_function_errors
+from .residuals import linear_residual, linear_function
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -384,3 +385,254 @@ def get_and_plot_Sigma_and_eta(filenames=[None, None],
             data_eta, params_eta, eta_errors]
 
     return data
+
+
+def plot_Sigma_compare_with_eta_inset(figure_name=None):
+    """Creates Figure 3 in the main text"""
+
+    # Get r, Sigma and eta values
+    r,Sigma = fitting.get_Sigma()
+    r,eta = fitting.get_eta()
+
+    # Calculate error bars
+    Sigma_errors, eta_errors = get_function_errors()
+
+    # Perform each fit
+    params_powerlaw, params_pitchfork, params_truncated = fitting.compare_fits(r, Sigma, eta)
+    pS_power, pe_power =  separate_params(params_powerlaw, func_type='power law')
+    pS_pitch, pe_pitch =  separate_params(params_pitchfork, func_type='pitchfork')
+    pS_trun, pe_trun =  separate_params(params_truncated, func_type='truncated')
+
+    # Create main plot (Sigma)
+    rlist = np.arange(0.8,8,(8-0.8)/1000)
+
+    labels = [r'$r$', r'$\Sigma(r)$']
+    logscale = [False, True]
+    Range = [[], []]
+    fig, ax = setup_plot(labels, logscale, Range)
+
+    plt.scatter(r, Sigma, c='k', label=r'Data')
+    plt.plot(rlist, Sigma_func(rlist, pS_trun, func_type='truncated'),c='b', label=r'NF')
+    plt.plot(rlist, Sigma_func(rlist, pS_power, func_type='power law'),c='g', label=r'Power Law')
+    plt.plot(rlist, Sigma_func(rlist, pS_pitch, func_type='pitchfork'),c='y', label=r'Pitchfork')
+
+    r_errors, Sigma_vals_errors, err = Sigma_errors
+    ax.errorbar(r_errors, Sigma_vals_errors, yerr = err, color='k', ls='none')
+
+    # Create legend
+    ax.legend(loc='upper right', shadow=True, fontsize=20)
+
+    # Create inset (eta)
+    inset1 = fig.add_axes([.3, .5, .35, .35])
+    inset1.scatter(r, eta,c='k',label=r'$\eta_{data}(r)$')
+    inset1.plot(rlist, eta_func(rlist, pe_trun, func_type='truncated'),c='b')
+    inset1.plot(rlist, eta_func(rlist, pe_power, func_type='power law'),c='g')
+    inset1.plot(rlist, eta_func(rlist, pe_pitch, func_type='pitchfork'),c='y')
+    r_errors, eta_vals_errors, err = eta_errors
+    inset1.errorbar(r_errors, eta_vals_errors, yerr = err, color='k', ls='none')
+    inset1.set_xlabel(r'$r$',fontsize=20, labelpad=10)
+    inset1.set_ylabel(r'$\eta(r)$',fontsize=20, labelpad=10)
+    plt.setp(inset1, yscale='log')
+    
+    # Save figure
+    if figure_name is None:
+        plt.savefig('comparison.png',bbox_inches='tight')
+    else:
+        plt.savefig(figure_name, bbox_inches='tight')
+
+    plt.show()
+    plt.close()
+
+    return
+
+
+def plot_logplot(figure_name=None):
+    """Creates Figure 4 in the main text"""
+
+    # Get r, Sigma and eta values
+    r,Sigma = fitting.get_Sigma()
+    r,eta = fitting.get_eta()
+
+    # Calculate error bars
+    Sigma_errors, eta_errors = get_function_errors()
+
+    # Perform each fit
+    params_powerlaw, params_pitchfork, params_truncated = fitting.compare_fits(r, Sigma, eta)
+    pS_power, pe_power =  separate_params(params_powerlaw, func_type='power law')
+    pS_pitch, pe_pitch =  separate_params(params_pitchfork, func_type='pitchfork')
+    pS_trun, pe_trun =  separate_params(params_truncated, func_type='truncated')
+
+    args = [r[:7], pS_trun]
+    params, err = fitting.perform_fit(linear_residual, [1.,1.], args)
+
+    # Create Plot
+    rlist = np.arange(-0.50,8,(8+0.05)/10000)
+    plt.figure(figsize=(10., 5.*(np.sqrt(5.)-1)))
+    ax = plt.subplot(111)
+
+    plt.scatter(r, 1./np.log(Sigma),c='k',label=r'Data')
+    plt.plot(rlist, linear_function(np.asarray(rlist),params),c='r',label='Linear Fit')
+    plt.plot(rlist, 1./np.log(Sigma_func(rlist, pS_trun, func_type='truncated')),c='b', label=r'NF')
+    plt.plot(rlist, 1./np.log(Sigma_func(rlist, pS_power, func_type='power law')),c='g', label=r'Power Law')
+    plt.plot(rlist, 1./np.log(Sigma_func(rlist, pS_pitch, func_type='pitchfork')),c='y', label=r'Pitchfork')
+    r_errors, Sigma_vals_errors, err = Sigma_errors
+    ax.errorbar(r_errors, Sigma_vals_errors, yerr = err, color='k', ls='none')
+
+    plt.ylim(0.,0.25);
+    plt.xlim(-0.5,2.0);
+
+    ax.axvline(x=0.0, ymin=0.0, ymax=1.0, color='k', linestyle='--')
+    ax.xaxis.set_tick_params(labelsize=20)
+    ax.yaxis.set_tick_params(labelsize=20)
+    plt.xlabel(r'$r$', fontsize=30, labelpad=10)
+    plt.ylabel(r'$1/\log\Sigma(r)$', fontsize=30, labelpad=10)
+
+    loc='lower right'
+    legend_font_size=20
+    ax.legend(loc=loc, shadow=True, fontsize=legend_font_size)
+
+    # Save figure
+    if figure_name is None:
+        plt.savefig('logplot.png',bbox_inches='tight')
+    else:
+        plt.savefig(figure_name, bbox_inches='tight')
+
+    plt.show()
+    plt.close()
+
+    return
+
+
+def compare_plots_supplement():
+    """ Creates the fit comparison plots in the supplement """
+
+    r,Sigma = fitting.get_Sigma()
+    r,eta = fitting.get_eta()
+
+    params0 = dict([('rScale',1.0), ('rc', 0.0), ('sScale', 10.),
+                   ('etaScale', 1.0), ('df', 2.0), ('lambdaH', 1.0),
+                   ('B', 1.0), ('C', 0.0), ('F', 1.0)])
+
+    # Truncated
+    fixed_dicts = [dict([('df',2.), ('B',0.)]),
+                   dict([('df',2.), ('C',0.)]),
+                   dict([('df',2.), ('C',0.), ('rc',0.)]),
+                   dict([('df',2.), ('rc',0.)]),
+                   dict([('df',2.), ('lambdaH',1.0)]),
+                   dict([('df',2.), ('C',0.), ('lambdaH',1.0)]),
+                   dict([('df',2.), ('C',0.), ('F',0.), ('lambdaH',1.0)]),
+                   dict([('df',2.), ('B',0.), ('C',0.), ('F',0.), ('lambdaH',1.0)])]
+    label_list = [r'$d_f=2$, $B=0$',
+                  r'$d_f=2$, $C=0$',
+                  r'$d_f=2$, $C=0$, $r_c=0$',
+                  r'$d_f=2$, $r_c=0$',
+                  r'$d_f=2$, $\lambda_h=1$',
+                  r'$d_f=2$, $C=0$, $\lambda_h=1$',
+                  r'$d_f=2$, $C=0$, $F=0$, $\lambda_h=1$',
+                  r'$d_f=2$, $B=0$, $C=0$, $F=0$, $\lambda_h=1$']
+    pS_list = []
+    pe_list = []
+
+    for fixed_dict in fixed_dicts:
+        params, err = fitting.joint_fit([r,Sigma,r,eta], fixed_dict=fixed_dict,
+                                        func_type='truncated', params0=params0,
+                                        verbose=False,show_params=False)
+        pS, pe =  separate_params(params, func_type='truncated')
+        pS_list.append(pS)
+        pe_list.append(pe)
+
+    Sigma_errors, eta_errors = get_function_errors()
+    r_errors, Sigma_vals_errors, err = Sigma_errors
+    r_errors, eta_vals_errors, err = eta_errors
+
+    labels = [r'$r$',r'$\Sigma(r)$']
+    logscale = [False,True]
+    Range = [[], []]
+    fig, ax = setup_plot(labels, logscale, Range)
+    ax.scatter(r,Sigma,label='data',color='k',s=40)
+    ax.errorbar(r_errors, Sigma_vals_errors, yerr = err, color='k', ls='none')
+    rlist = np.arange(0.5,10,(10.-0.5)/1000)
+    for i, label in enumerate(label_list):
+        ax.plot(rlist, Sigma_func(rlist, pS_list[i], func_type='truncated'),label=label)
+    figure_name='Sigma_comparison_truncated.png'
+    loc = 'upper right'
+    plt.xlim([0.5,9.])
+    plt.ylim([0.,10**5.])
+    finish_plot(ax, figure_name, loc=loc)
+
+    labels = [r'$r$',r'$\eta(r)$']
+    logscale = [False,True]
+    Range = [[], []]
+    fig, ax = setup_plot(labels, logscale, Range)
+    ax.scatter(r,eta,label='data',color='k',s=40)
+    ax.errorbar(r_errors, eta_vals_errors, yerr = err, color='k', ls='none')
+    rlist = np.arange(0.5,10,(10.-0.5)/1000)
+    for i, label in enumerate(label_list):
+        ax.plot(rlist, eta_func(rlist, pe_list[i], func_type='truncated'),label=label)
+    loc = 'lower right'
+    figure_name = 'eta_comparison_truncated.png'
+    plt.xlim([0.5,9.])
+    plt.ylim([10**-2.,10**1.1])
+    finish_plot(ax, figure_name, loc=loc)
+
+    # Well-Behaved
+    fixed_dicts = [dict([('df',2.), ('B',0.)]),
+                   dict([('df',2.), ('C',0.)]),
+                   dict([('df',2.), ('C',0.), ('rc',0.)]),
+                   dict([('df',2.), ('lambdaH',1.0)]),
+                   dict([('df',2.), ('C',0.), ('lambdaH',1.0)]),
+                   dict([('df',2.), ('C',0.), ('F',0.), ('lambdaH',1.0)]),
+                   dict([('df',2.), ('B',0.), ('C',0.), ('F',0.), ('lambdaH',1.0)])]
+    label_list = [r'$d_f=2$, $B=0$',
+                  r'$d_f=2$, $C=0$',
+                  r'$d_f=2$, $C=0$, $r_c=0$',
+                  r'$d_f=2$, $\lambda_h=1$',
+                  r'$d_f=2$, $C=0$, $\lambda_h=1$',
+                  r'$d_f=2$, $C=0$, $F=0$, $\lambda_h=1$',
+                  r'$d_f=2$, $B=0$, $C=0$, $F=0$, $\lambda_h=1$']
+    pS_list = []
+    pe_list = []
+
+    for fixed_dict in fixed_dicts:
+        params, err = fitting.joint_fit([r,Sigma,r,eta], fixed_dict=fixed_dict,
+                                        func_type='well-behaved', params0=params0,
+                                        verbose=False, show_params=False)
+        pS, pe =  separate_params(params, func_type='well-behaved')
+        pS_list.append(pS)
+        pe_list.append(pe)
+
+    Sigma_errors, eta_errors = get_function_errors(func_type='well-behaved')
+    r_errors, Sigma_vals_errors, err = Sigma_errors
+    r_errors, eta_vals_errors, err = eta_errors
+
+    labels = [r'$r$',r'$\Sigma(r)$']
+    logscale = [False,True]
+    Range = [[], []]
+    fig, ax = setup_plot(labels, logscale, Range)
+    ax.scatter(r,Sigma,label='data',color='k',s=40)
+    ax.errorbar(r_errors, Sigma_vals_errors, yerr = err, color='k', ls='none')
+    rlist = np.arange(0.5,10,(10.-0.5)/1000)
+    for i, label in enumerate(label_list):
+        ax.plot(rlist, Sigma_func(rlist, pS_list[i], func_type='well-behaved'),label=label)
+    figure_name='Sigma_comparison_wellbehaved.png'
+    loc = 'upper right'
+    plt.xlim([0.5,9.])
+    plt.ylim([0.,10**5.])
+    finish_plot(ax, figure_name, loc=loc)
+
+    labels = [r'$r$',r'$\eta(r)$']
+    logscale = [False,True]
+    Range = [[], []]
+    fig, ax = setup_plot(labels, logscale, Range)
+    ax.scatter(r,eta,label='data',color='k',s=40)
+    ax.errorbar(r_errors, eta_vals_errors, yerr = err, color='k', ls='none')
+    rlist = np.arange(0.5,10,(10.-0.5)/1000)
+    for i, label in enumerate(label_list):
+        ax.plot(rlist, eta_func(rlist, pe_list[i], func_type='well-behaved'),label=label)
+    loc = 'lower right'
+    figure_name = 'eta_comparison_wellbehaved.png'
+    plt.xlim([0.5,9.])
+    plt.ylim([10**-2.,10**1.1])
+    finish_plot(ax, figure_name, loc=loc)
+
+    return
